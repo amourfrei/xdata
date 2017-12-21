@@ -3,7 +3,7 @@
  * @Date:   2017-12-20T10:21:13+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2017-12-20T10:23:27+08:00
+ * @Last modified time: 2017-12-21T11:02:31+08:00
  */
  import React from 'react';
  import { Card, Spin } from 'antd';
@@ -55,7 +55,7 @@
    );
 
    return (
-     <Card
+     <Card 
        bodyStyle={{ padding: '20px 24px 8px 24px' }}
        {...rest}
      >
