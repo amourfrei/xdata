@@ -3,7 +3,7 @@
  * @Date:   2017-12-14T18:12:31+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2017-12-20T10:51:03+08:00
+ * @Last modified time: 2018-01-24T20:03:51+08:00
  */
 
 
@@ -21,6 +21,7 @@ import Field from './Field';
 import WaterWave from './WaterWave';
 import TagCloud from './TagCloud';
 import TimelineChart from './TimelineChart';
+import Spline from './Spline';
 
 const yuan = val => `&yen; ${numeral(val).format('0,0')}`;
 
@@ -38,4 +39,5 @@ export {
   WaterWave,
   TagCloud,
   TimelineChart,
+  Spline,
 };

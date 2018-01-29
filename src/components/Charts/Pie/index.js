@@ -1,267 +1,241 @@
 /**
  * @Author: Chen Ming <amour>
- * @Date:   2017-12-20T10:36:15+08:00
+ * @Date:   2018-01-24T10:29:52+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2017-12-20T10:37:21+08:00
+ * @Last modified time: 2018-01-25T17:46:17+08:00
  */
- import React, { Component } from 'react';
- import G2 from 'g2';
- import { Divider } from 'antd';
- import classNames from 'classnames';
- import ReactFitText from 'react-fittext';
- import Debounce from 'lodash-decorators/debounce';
- import Bind from 'lodash-decorators/bind';
- import equal from '../equal';
- import styles from './index.less';
 
- /* eslint react/no-danger:0 */
- class Pie extends Component {
-   state = {
-     legendData: [],
-     legendBlock: true,
-   };
 
-   componentDidMount() {
-     this.renderChart();
-     this.resize();
-     window.addEventListener('resize', this.resize);
-   }
 
-   componentWillReceiveProps(nextProps) {
-     if (!equal(this.props, nextProps)) {
-       this.renderChart(nextProps.data);
-     }
-   }
+import React, { Component } from 'react';
+import { Chart, Tooltip, Geom, Coord, Axis, Legend, Label } from 'bizcharts';
+import { DataView } from '@antv/data-set';
+import { Divider } from 'antd';
+import classNames from 'classnames';
+import ReactFitText from 'react-fittext';
+import Debounce from 'lodash-decorators/debounce';
+import Bind from 'lodash-decorators/bind';
+import autoHeight from '../autoHeight';
 
-   componentWillUnmount() {
-     window.removeEventListener('resize', this.resize);
-     if (this.chart) {
-       this.chart.destroy();
-     }
-     this.resize.cancel();
-   }
+import styles from './index.less';
 
-   @Bind()
-   @Debounce(300)
-   resize() {
-     const { hasLegend } = this.props;
-     if (!hasLegend || !this.root) {
-       window.removeEventListener('resize', this.resize);
-       return;
-     }
-     if (this.root.parentNode.clientWidth <= 380) {
-       if (!this.state.legendBlock) {
-         this.setState({
-           legendBlock: true,
-         }, () => {
-           this.renderChart();
-         });
-       }
-     } else if (this.state.legendBlock) {
-       this.setState({
-         legendBlock: false,
-       }, () => {
-         this.renderChart();
-       });
-     }
-   }
+/* eslint react/no-danger:0 */
+@autoHeight()
+export default class Pie extends Component {
+  state = {
+    legendData: [],
+    legendBlock: false,
+  };
 
-   handleRef = (n) => {
-     this.node = n;
-   }
+  componentDidMount() {
+    this.getLengendData();
+    this.resize();
+    window.addEventListener('resize', this.resize);
+  }
 
-   handleRoot = (n) => {
-     this.root = n;
-   }
+  componentWillReceiveProps(nextProps) {
+    if (this.props.data !== nextProps.data) {
+      this.getLengendData();
+    }
+  }
 
-   handleLegendClick = (item, i) => {
-     const newItem = item;
-     newItem.checked = !newItem.checked;
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.resize);
+    this.resize.cancel();
+  }
 
-     const { legendData } = this.state;
-     legendData[i] = newItem;
+  getG2Instance = (chart) => {
+    this.chart = chart;
+  };
 
-     if (this.chart) {
-       const filterItem = legendData.filter(l => l.checked).map(l => l.x);
-       this.chart.filter('x', filterItem);
-       this.chart.repaint();
-     }
+  // for custom lengend view
+  getLengendData = () => {
+    if (!this.chart) return;
+    const geom = this.chart.getAllGeoms()[0]; // 获取所有的图形
+    const items = geom.get('dataArray') || []; // 获取图形对应的
 
-     this.setState({
-       legendData,
-     });
-   }
+    const legendData = items.map((item) => {
+      /* eslint no-underscore-dangle:0 */
+      const origin = item[0]._origin;
+      origin.color = item[0].color;
+      origin.checked = true;
+      return origin;
+    });
 
-   renderChart(d) {
-     let data = d || this.props.data;
+    this.setState({
+      legendData,
+    });
+  };
 
-     const {
-       height = 0,
-       hasLegend,
-       fit = true,
-       margin = [12, 0, 12, 0], percent, color,
-       inner = 0.75,
-       animate = true,
-       colors,
-       lineWidth = 0,
-     } = this.props;
+  // for window resize auto responsive legend
+  @Bind()
+  @Debounce(300)
+  resize() {
+    const { hasLegend } = this.props;
+    if (!hasLegend || !this.root) {
+      window.removeEventListener('resize', this.resize);
+      return;
+    }
+    if (this.root.parentNode.clientWidth <= 380) {
+      if (!this.state.legendBlock) {
+        this.setState({
+          legendBlock: true,
+        });
+      }
+    } else if (this.state.legendBlock) {
+      this.setState({
+        legendBlock: false,
+      });
+    }
+  }
 
-     const defaultColors = colors;
+  handleRoot = (n) => {
+    this.root = n;
+  };
 
-     let selected = this.props.selected || true;
-     let tooltip = this.props.tooltips || true;
+  handleLegendClick = (item, i) => {
+    const newItem = item;
+    newItem.checked = !newItem.checked;
 
-     let formatColor;
-     if (percent) {
-       selected = false;
-       tooltip = false;
-       formatColor = (value) => {
-         if (value === '占比') {
-           return color || 'rgba(24, 144, 255, 0.85)';
-         } else {
-           return '#F0F2F5';
-         }
-       };
+    const { legendData } = this.state;
+    legendData[i] = newItem;
 
-       /* eslint no-param-reassign: */
-       data = [
-         {
-           x: '占比',
-           y: parseFloat(percent),
-         },
-         {
-           x: '反比',
-           y: 100 - parseFloat(percent),
-         },
-       ];
-     }
+    const filteredLegendData = legendData.filter(l => l.checked).map(l => l.x);
 
-     if (!data || (data && data.length < 1)) {
-       return;
-     }
+    if (this.chart) {
+      this.chart.filter('x', val => filteredLegendData.indexOf(val) > -1);
+    }
 
-     // clean
-     this.node.innerHTML = '';
+    this.setState({
+      legendData,
+    });
+  };
 
-     const { Stat } = G2;
+  render() {
+    const {
+      valueFormat,
+      subTitle,
+      total,
+      hasLegend = false,
+      className,
+      style,
+      height,
+      forceFit = true,
+      percent = 0,
+      color,
+      inner = 0.6,
+      animate = true,
+      colors,
+      lineWidth = 1,
+    } = this.props;
 
-     const chart = new G2.Chart({
-       container: this.node,
-       forceFit: fit,
-       height,
-       plotCfg: {
-         margin,
-       },
-       animate,
-     });
+    const { legendData, legendBlock } = this.state;
+    const pieClassName = classNames(styles.pie, className, {
+      [styles.hasLegend]: !!hasLegend,
+      [styles.legendBlock]: legendBlock,
+    });
 
-     if (!tooltip) {
-       chart.tooltip(false);
-     } else {
-       chart.tooltip({
-         title: null,
-       });
-     }
+    const defaultColors = colors;
+    let data = [
+          { item: '事例一', count: 40 },
+          { item: '事例二', count: 21 },
+          { item: '事例三', count: 17 },
+          { item: '事例四', count: 13 },
+          { item: '事例五', count: 9 }
+        ];
+    let selected = this.props.selected || true;
+    let tooltip = this.props.tooltip || true;
+    let formatColor;
 
-     chart.axis(false);
-     chart.legend(false);
+    const scale = {
+      x: {
+        type: 'cat',
+        range: [0, 1],
+      },
+      y: {
+        min: 0,
+      },
+    };
 
-     chart.source(data, {
-       x: {
-         type: 'cat',
-         range: [0, 1],
-       },
-       y: {
-         min: 0,
-       },
-     });
+    if (percent) {
+      selected = false;
+      tooltip = false;
+      formatColor = (value) => {
+        if (value === '占比') {
+          return color || 'rgba(24, 144, 255, 0.85)';
+        } else {
+          return '#F0F2F5';
+        }
+      };
 
-     chart.coord('theta', {
-       inner,
-     });
+      data = [
+        {
+          x: '占比',
+          y: parseFloat(percent),
+        },
+        {
+          x: '反比',
+          y: 100 - parseFloat(percent),
+        },
+      ];
+    }
 
-     chart
-       .intervalStack()
-       .position(Stat.summary.percent('y'))
-       .style({ lineWidth, stroke: '#fff' })
-       .color('x', percent ? formatColor : defaultColors)
-       .selected(selected);
+    const tooltipFormat = [
+      'x*percent',
+      (x, p) => ({
+        name: x,
+        value: `${(p * 100).toFixed(2)}%`,
+      }),
+    ];
 
-     chart.render();
+    const padding = [12, 0, 12, 0];
 
-     this.chart = chart;
+    const dv = new DataView();
+    dv.source(data).transform({
+      type: 'percent',
+      field: 'count',
+      dimension: 'item',
+      as: 'percent',
+    });
 
-     let legendData = [];
-     if (hasLegend) {
-       const geom = chart.getGeoms()[0]; // 获取所有的图形
-       const items = geom.getData(); // 获取图形对应的数据
-       legendData = items.map((item) => {
-         /* eslint no-underscore-dangle:0 */
-         const origin = item._origin;
-         origin.color = item.color;
-         origin.checked = true;
-         return origin;
-       });
-     }
+    const cols = {
+      percent: {
+      formatter: val => {
+        val = (val * 100) + '%';
+          return val;
+        }
+      }
+    }
 
-     this.setState({
-       legendData,
-     });
-   }
-
-   render() {
-     const { valueFormat, subTitle, total, hasLegend, className, style } = this.props;
-     const { legendData, legendBlock } = this.state;
-     const pieClassName = classNames(styles.pie, className, {
-       [styles.hasLegend]: !!hasLegend,
-       [styles.legendBlock]: legendBlock,
-     });
-
-     return (
-       <div ref={this.handleRoot} className={pieClassName} style={style}>
-         <ReactFitText maxFontSize={25}>
-           <div className={styles.chart}>
-             <div ref={this.handleRef} style={{ fontSize: 0 }} />
-             {
-               (subTitle || total) && (
-                 <div className={styles.total}>
-                   {subTitle && <h4 className="pie-sub-title">{subTitle}</h4>}
-                   {
-                     // eslint-disable-next-line
-                     total && <div className="pie-stat" dangerouslySetInnerHTML={{ __html: total }} />
-                   }
-                 </div>
-               )
-             }
-           </div>
-         </ReactFitText>
-
-         {
-           hasLegend && (
-             <ul className={styles.legend}>
-               {
-                 legendData.map((item, i) => (
-                   <li key={item.x} onClick={() => this.handleLegendClick(item, i)}>
-                     <span className={styles.dot} style={{ backgroundColor: !item.checked ? '#aaa' : item.color }} />
-                     <span className={styles.legendTitle}>{item.x}</span>
-                     <Divider type="vertical" />
-                     <span className={styles.percent}>{`${(item['..percent'] * 100).toFixed(2)}%`}</span>
-                     <span
-                       className={styles.value}
-                       dangerouslySetInnerHTML={{
-                         __html: valueFormat ? valueFormat(item.y) : item.y,
-                       }}
-                     />
-                   </li>
-                 ))
-               }
-             </ul>
-           )
-         }
-       </div>
-     );
-   }
- }
-
- export default Pie;
+    return (
+      <div ref={this.handleRoot} className={pieClassName} style={style}>
+      <Chart height={500} data={dv} scale={cols} forceFit>
+          <Coord type='theta' radius={0.75} />
+          <Axis name="percent" />
+          <Legend position='bottom'/>
+          <Tooltip
+            showTitle={false}
+            itemTpl='<li><span style="background-color:{color};" class="g2-tooltip-marker"></span>{name}: {value}</li>'
+            />
+          <Geom
+            type="intervalStack"
+            position="percent"
+            color='item'
+            tooltip={['item*percent',(item, percent) => {
+              percent = percent * 100 + '%';
+              return {
+                name: item,
+                value: percent
+              };
+            }]}
+            style={{lineWidth: 1,stroke: '#fff'}}
+            >
+            <Label content='percent' formatter={(val, item) => {
+                return item.point.item + ': ' + val;}} />
+          </Geom>
+        </Chart>
+      </div>
+    );
+  }
+}

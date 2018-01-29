@@ -3,7 +3,7 @@
  * @Date:   2017-12-20T10:02:44+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2018-01-23T14:32:54+08:00
+ * @Last modified time: 2018-01-23T19:50:23+08:00
  */
  import React, { Component } from 'react';
  import { connect } from 'dva';
@@ -16,7 +16,7 @@
  import NumberInfo from '../../components/NumberInfo';
  import { getTimeDistance } from '../../utils/utils';
 
- import styles from './Analysis.less';
+ import styles from './History.less';
 
  const { TabPane } = Tabs;
  const { RangePicker } = DatePicker;
@@ -32,7 +32,7 @@
  @connect(state => ({
    chart: state.chart,
  }))
- export default class Analysis extends Component {
+ export default class History extends Component {
    state = {
      salesType: 'all',
      currentTabKey: '',
@@ -351,20 +351,15 @@
                      </div>
                    </Col>
                    <Col xl={8} lg={12} md={12} sm={24} xs={24}>
-                     <div className={styles.salesRank}>
-                       <h4 className={styles.rankingTitle}>门店访问量排名</h4>
-                       <ul className={styles.rankingList}>
-                         {
-                           rankingListData.map((item, i) => (
-                             <li key={item.title}>
-                               <span className={(i < 3) && styles.active}>{i + 1}</span>
-                               <span>{item.title}</span>
-                               <span>{numeral(item.total).format('0,0')}</span>
-                             </li>
-                           ))
-                         }
-                       </ul>
-                     </div>
+                   <Pie
+                     hasLegend
+                     subTitle="销售额"
+                     total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
+                     data={salesPieData}
+                     valueFormat={val => yuan(val)}
+                     height={248}
+                     lineWidth={4}
+                   />
                    </Col>
                  </Row>
                </TabPane>

@@ -3,7 +3,7 @@
  * @Date:   2017-12-20T10:40:17+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2017-12-20T10:40:26+08:00
+ * @Last modified time: 2018-01-23T18:30:35+08:00
  */
  import React, { Component } from 'react';
  import G2 from 'g2';
@@ -96,8 +96,8 @@
        },
      });
 
-     chart.line().position('x*y1').color('#1890FF').size(borderWidth);
-     chart.line().position('x*y2').color('#2FC25B').size(borderWidth);
+     chart.line().position('x*y1').color('#1890FF').size(borderWidth).shape('smooth');
+     chart.line().position('x*y2').color('#2FC25B').size(borderWidth).shape('smooth');
 
      this.chart = chart;
 

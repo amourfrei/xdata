@@ -3,7 +3,7 @@
  * @Date:   2017-11-19T22:37:16+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2017-12-20T09:36:43+08:00
+ * @Last modified time: 2018-01-23T14:13:07+08:00
  */
 
 
@@ -371,22 +371,9 @@ class BasicLayout extends React.PureComponent {
               <Redirect exact from="/" to="/table-list" />
             </Switch>
             <GlobalFooter
-              // links={[{
-              //   title: 'Pro 首页',
-              //   href: 'http://pro.ant.design',
-              //   blankTarget: true,
-              // }, {
-              //   title: 'GitHub',
-              //   href: 'https://github.com/ant-design/ant-design-pro',
-              //   blankTarget: true,
-              // }, {
-              //   title: 'Ant Design',
-              //   href: 'http://ant.design',
-              //   blankTarget: true,
-              // }]}
               copyright={
                 <div>
-                  Copyright <Icon type="copyright" /> 2017 JDJR X-DATA
+                  Copyright <Icon type="copyright" /> 2018 JDPAY X-DATA
                 </div>
               }
             />

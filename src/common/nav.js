@@ -3,7 +3,7 @@
  * @Date:   2017-11-19T22:37:16+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2017-12-20T10:15:53+08:00
+ * @Last modified time: 2018-01-26T17:25:39+08:00
  */
 
 
@@ -26,21 +26,21 @@ export const getNavData = app => [
     path: '/',
     children: [
       {
-        name: 'Dashboard',
+        name: '交易趋势',
         icon: 'dashboard',
-        path: 'dashboard',
+        path: 'dynamic',
         children: [
           {
-            name: '工作台',
-            path: 'analysis',
-            component: dynamicWrapper(app, ['chart'], () => import('../routes/Dashboard/Analysis'))
-          }
+            name: '实时数据',
+            path: 'realtime',
+            component: dynamicWrapper(app, ['chart', 'base', 'rule'], () => import('../routes/Realtime/Realtime'))
+          },
+          // {
+          //   name: '历史趋势',
+          //   path: 'history',
+          //   component: dynamicWrapper(app, ['chart', 'base', 'rule'], () => import('../routes/History/History')),//配置需要加载的组件内容，包括models
+          // },
         ]
-      },
-      {
-        name: '查询表格',
-        path: 'table-list',
-        component: dynamicWrapper(app, ['rule', 'chart'], () => import('../routes/List/TableList')),//配置需要加载的组件内容，包括models
       },
     ],
   },
