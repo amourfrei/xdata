@@ -3,7 +3,7 @@
  * @Date:   2017-12-14T18:12:31+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2018-01-24T20:03:51+08:00
+ * @Last modified time: 2018-01-31T17:50:12+08:00
  */
 
 
@@ -23,7 +23,7 @@ import TagCloud from './TagCloud';
 import TimelineChart from './TimelineChart';
 import Spline from './Spline';
 
-const yuan = val => `&yen; ${numeral(val).format('0,0')}`;
+const yuan = val => `&yen; ${numeral(val).format('0,0.00')}`;
 
 export {
   yuan,

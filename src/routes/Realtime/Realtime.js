@@ -3,7 +3,7 @@
  * @Date:   2017-12-20T10:02:44+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2018-01-26T18:13:41+08:00
+ * @Last modified time: 2018-02-02T17:44:18+08:00
  */
  import React, { PureComponent } from 'react';
  import { connect } from 'dva';
@@ -22,213 +22,182 @@
  const { TabPane } = Tabs;
  const { RangePicker } = DatePicker;
 
- const rankingListData = [];
- for (let i = 0; i < 7; i += 1) {
-   rankingListData.push({
-     title: `工专路 ${i} 号店`,
-     total: 323234,
-   });
- }
 
  @connect(state => ({
-   chart: state.chart,
    base: state.base,
-   rule: state.rule,
+   pay: state.pay,
+   hours: state.hours,
  }))
  export default class Realtime extends PureComponent {
-   state = {
-     salesType: 'all',
-     currentTabKey: '',
-     rangePickerValue: getTimeDistance('year'),
-   }
 
    componentDidMount() {
      const { dispatch } = this.props;
      dispatch({
-       type: 'chart/fetch',
-     });
-     dispatch({
        type: 'base/fetch',
      });
      dispatch({
-       type: 'rule/fetch'
+       type: 'pay/fetch'
+     });
+     dispatch({
+       type: 'hours/fetch'
      });
    }
 
    componentWillUnmount() {
      const { dispatch } = this.props;
      dispatch({
-       type: 'chart/clear',
+       type: 'base/clear',
+     });
+     dispatch({
+       type: 'pay/clear'
+     });
+     dispatch({
+       type: 'hours/clear'
      });
    }
 
-   handleChangeSalesType = (e) => {
-     this.setState({
-       salesType: e.target.value,
-     });
-   }
-
-   handleTabChange = (key) => {
-     this.setState({
-       currentTabKey: key,
-     });
-   }
-
-   handleRangePickerChange = (rangePickerValue) => {
-     this.setState({
-       rangePickerValue,
-     });
-
-     this.props.dispatch({
-       type: 'chart/fetchSalesData',
-     });
-   }
-
-   selectDate = (type) => {
-     this.setState({
-       rangePickerValue: getTimeDistance(type),
-     });
-
-     this.props.dispatch({
-       type: 'chart/fetchSalesData',
-     });
-   }
-
-   isActive(type) {
-     const { rangePickerValue } = this.state;
-     const value = getTimeDistance(type);
-     if (!rangePickerValue[0] || !rangePickerValue[1]) {
-       return;
-     }
-     if (rangePickerValue[0].isSame(value[0], 'day') && rangePickerValue[1].isSame(value[1], 'day')) {
-       return styles.currentDate;
-     }
-   }
 
    render() {
-     const { rangePickerValue, salesType, currentTabKey } = this.state;
-     const { rule: { loading: ruleLoading, data }, chart, base } = this.props;
-     const {
-       visitData,
-       visitData2,
-       salesData,
-       searchData,
-       offlineData,
-       offlineChartData,
-       salesTypeData,
-       salesTypeDataOnline,
-       salesTypeDataOffline,
-       loading,
-     } = chart;
-
+     const { base, pay, hours, loading } = this.props;
      const {
        baseData
      } = base;
 
-     const salesPieData = salesType === 'all' ?
-       salesTypeData
-       :
-       (salesType === 'online' ? salesTypeDataOnline : salesTypeDataOffline);
+     let piePayAmout = [],
+         piePayCount = [],
+         pieCustomAmount = [],
+         pieCustomUsers = [];
+     let spPayAmout = [],
+         spPayCount = [],
+         spCustomAmount = [],
+         spCustomUsers = [];
+     let hourPayAmout = [],
+         hourPayCount = [],
+         hourCustomAmount = [],
+         hourCustomUsers = [];
+     if(pay.loading === false){
+       //交易金额
+       let payAmountOrigin = pay.payTypeData['A'];
+       for(let p in payAmountOrigin){
+         let tempVals = Object.values(payAmountOrigin[p]).reduce((prev, next)=>{
+           return prev + next;
+         });
+         piePayAmout.push({item: p, count: tempVals});
+       }
+       //交易笔数
+       let payCountOrigin = pay.payTypeData['B'];
+       for(let p in payCountOrigin){
+         let tempVals = Object.values(payCountOrigin[p]).reduce((prev, next)=>{
+           return prev + next;
+         });
+         piePayCount.push({item: p, count: tempVals});
+       }
+       //成交用户数
+       let customUsersOrigin = pay.payTypeData['C'];
+       for(let p in customUsersOrigin){
+         let tempVals = Object.values(customUsersOrigin[p]).reduce((prev, next)=>{
+           return prev + next;
+         });
+         pieCustomUsers.push({item: p, count: tempVals});
+       }
+       //客单价
+      //  let customAmountOrigin = pay.payTypeData['B'];
+       for(let p in customUsersOrigin){
+         let tempVals = Object.values(customUsersOrigin[p]).reduce((prev, next)=>{
+           return prev + next;
+         });
+         let tempValsAmount = Object.values(payAmountOrigin[p]).reduce((prev, next)=>{
+           return prev + next;
+         });
+         pieCustomAmount.push({item: p, count: tempValsAmount / tempVals});
+       }
 
-     const menu = (
-       <Menu>
-         <Menu.Item>操作一</Menu.Item>
-         <Menu.Item>操作二</Menu.Item>
-       </Menu>
-     );
+       //for spline.
+      //交易金额
+      let dateTempA = Object.keys(Object.values(payAmountOrigin)[0]);
+      dateTempA.forEach((item, index)=>{
+        let obj = {};
+        Object.keys(payAmountOrigin).forEach((i, x)=>{
+          obj[i] = payAmountOrigin[i][item];
+        });
+        obj['x'] = item;
+        spPayAmout.push(obj);
+      });
 
-     const iconGroup = (
-       <span className={styles.iconGroup}>
-         <Dropdown overlay={menu} placement="bottomRight">
-           <Icon type="ellipsis" />
-         </Dropdown>
-       </span>
-     );
+      //交易笔数
+      let dateTempB = Object.keys(Object.values(payCountOrigin)[0]);
+      dateTempB.forEach((item, index)=>{
+        let obj = {};
+        Object.keys(payCountOrigin).forEach((i, x)=>{
+          obj[i] = payCountOrigin[i][item];
+        });
+        obj['x'] = item;
+        spPayCount.push(obj);
+      });
 
-     const salesExtra = (
-       <div className={styles.salesExtraWrap}>
-         <div className={styles.salesExtra}>
-           <a className={this.isActive('today')} onClick={() => this.selectDate('today')}>
-             今日
-           </a>
-           <a className={this.isActive('week')} onClick={() => this.selectDate('week')}>
-             本周
-           </a>
-           <a className={this.isActive('month')} onClick={() => this.selectDate('month')}>
-             本月
-           </a>
-           <a className={this.isActive('year')} onClick={() => this.selectDate('year')}>
-             全年
-           </a>
-         </div>
-         <RangePicker
-           value={rangePickerValue}
-           onChange={this.handleRangePickerChange}
-           style={{ width: 256 }}
-         />
-       </div>
-     );
+      //成交用户数
+      let dateTempC = Object.keys(Object.values(customUsersOrigin)[0]);
+      dateTempC.forEach((item, index)=>{
+        let obj = {};
+        Object.keys(customUsersOrigin).forEach((i, x)=>{
+          obj[i] = customUsersOrigin[i][item];
+        });
+        obj['x'] = item;
+        spCustomUsers.push(obj);
+      });
 
-     const columns = [
-       {
-         title: '排名',
-         dataIndex: 'index',
-         key: 'index',
-       },
-       {
-         title: '搜索关键词',
-         dataIndex: 'keyword',
-         key: 'keyword',
-         render: text => <a href="/">{text}</a>,
-       },
-       {
-         title: '用户数',
-         dataIndex: 'count',
-         key: 'count',
-         sorter: (a, b) => a.count - b.count,
-         className: styles.alignRight,
-       },
-       {
-         title: '周涨幅',
-         dataIndex: 'range',
-         key: 'range',
-         sorter: (a, b) => a.range - b.range,
-         render: (text, record) => (
-           <Trend flag={record.status === 1 ? 'down' : 'up'}>
-             <span style={{ marginRight: 4 }}>{text}%</span>
-           </Trend>
-         ),
-         align: 'right',
-       },
-     ];
+      //客单价
+      let dateTempD = Object.keys(Object.values(payAmountOrigin)[0]);
+      dateTempD.forEach((item, index)=>{
+        let obj = {};
+        Object.keys(payAmountOrigin).forEach((i, x)=>{
+          obj[i] = payAmountOrigin[i][item] / customUsersOrigin[i][item];
+        });
+        obj['x'] = item;
+        spCustomAmount.push(obj);
+      });
 
-     const activeKey = currentTabKey || (offlineData[0] && offlineData[0].name);
+     }
 
-     const CustomTab = ({ data, currentTabKey: currentKey }) => (
-       <Row gutter={8} style={{ width: 138, margin: '8px 0' }}>
-         <Col span={12}>
-           <NumberInfo
-             title={data.name}
-             subTitle="转化率"
-             gap={2}
-             total={`${data.cvr * 100}%`}
-             theme={(currentKey !== data.name) && 'light'}
-           />
-         </Col>
-         <Col span={12} style={{ paddingTop: 36 }}>
-           <Pie
-             animate={false}
-             color={(currentKey !== data.name) && '#BDE4FF'}
-             inner={0.55}
-             tooltip={false}
-             margin={[0, 0, 0, 0]}
-             percent={data.cvr * 100}
-             height={64}
-           />
-         </Col>
-       </Row>
-     );
+     //小时指标数据计算
+     if(hours.loading === false){
+       //交易金额
+       let hPayAmoutOrigin =  hours.hoursData['A'],
+           hPayCountOrigin = hours.hoursData['B'],
+           hCustomUsersOrigin = hours.hoursData['C'];
+      let dateTempA = Object.keys(hPayAmoutOrigin);
+      dateTempA.forEach((item, index)=>{
+        let obj = {};
+        obj['x'] = item;
+        obj['今天'] = hPayAmoutOrigin[item];
+        hourPayAmout.push(obj);
+      });
+      //支付笔数
+      let dateTempB = Object.keys(hPayCountOrigin);
+      dateTempA.forEach((item, index)=>{
+        let obj = {};
+        obj['x'] = item;
+        obj['今天'] = hPayCountOrigin[item];
+        hourPayCount.push(obj);
+      });
+      //成交用户数
+      let dateTempC = Object.keys(hCustomUsersOrigin);
+      dateTempA.forEach((item, index)=>{
+        let obj = {};
+        obj['x'] = item;
+        obj['今天'] = hPayAmoutOrigin[item];
+        hourCustomUsers.push(obj);
+      });
+      //客单价
+      dateTempA.forEach((item, index)=>{
+        let obj = {};
+        obj['x'] = item;
+        obj['今天'] = hPayAmoutOrigin[item] / hPayAmoutOrigin[item];
+        hourCustomAmount.push(obj);
+      });
 
+     }
+     console.error(hourPayAmout);
      const topColResponsiveProps = {
        xs: 24,
        sm: 12,
@@ -240,19 +209,29 @@
 
      return (
        <div>
+        <Row gutter={24}>
+          <Col>
+            <Card
+              title={<div><span style={{marginRight: '20px'}}>实时数据：12:00:00</span>  <Tooltip title="数据截至上一个整点时段"><Icon type="info-circle-o" /></Tooltip></div>}
+              loading={loading}
+              bordered={false}
+              style={{ padding: 0, marginBottom: '20px' }}
+            />
+          </Col>
+        </Row>
+        {baseData.nowaday &&
          <Row gutter={24}>
            <Col {...topColResponsiveProps}>
              <ChartCard
                bordered={false}
                title="交易金额"
                action={<Tooltip title="交易成功的订单金额"><Icon type="info-circle-o" /></Tooltip>}
-               total={yuan(baseData.nowaday && baseData.nowaday.tradeAmt)}
-              //  footer={<Field label="日均销售额" value={`￥${numeral(12423).format('0,0')}`} />}
+               total={yuan(baseData.nowaday.tradeAmt)}
                contentHeight={46}
                className={styles.chartCardA}
              >
-               <Trend flag="down">
-                 日环比<span className={styles.trendText}>{ baseData.nowaday && (baseData.nowaday.tradeAmt / baseData.contrastive.tradeAmt) }%</span>
+               <Trend flag={baseData.nowaday.tradeAmt - baseData.contrastive.tradeAmt >= 0 ? 'up' : 'down'}>
+                 日环比<span className={styles.trendText}>{ numeral(Math.abs(baseData.nowaday.tradeAmt - baseData.contrastive.tradeAmt) / baseData.contrastive.tradeAmt).format('0.00') }%</span>
                </Trend>
              </ChartCard>
            </Col>
@@ -261,13 +240,12 @@
                bordered={false}
                title="交易笔数"
                action={<Tooltip title="交易成功的订单笔数"><Icon type="info-circle-o" /></Tooltip>}
-               total={numeral(baseData.nowaday && baseData.nowaday.tradeCnt).format('0,0')}
-              //  footer={<Field label="日访问量" value={numeral(1234).format('0,0')} />}
+               total={numeral(baseData.nowaday.tradeCnt).format('0')}
                contentHeight={46}
                className={styles.chartCardB}
              >
-             <Trend flag="down">
-               日环比<span className={styles.trendText}>{ baseData.nowaday && (baseData.nowaday.tradeCnt / baseData.contrastive.tradeCnt) }%</span>
+             <Trend flag={baseData.nowaday.tradeCnt - baseData.contrastive.tradeCnt >= 0 ? 'up' : 'down'}>
+               日环比<span className={styles.trendText}>{ numeral(Math.abs(baseData.nowaday.tradeCnt - baseData.contrastive.tradeCnt) / baseData.contrastive.tradeCnt).format('0.00') }%</span>
              </Trend>
              </ChartCard>
            </Col>
@@ -276,13 +254,12 @@
                bordered={false}
                title="成交用户数"
                action={<Tooltip title="交易成功的京东用户数"><Icon type="info-circle-o" /></Tooltip>}
-               total={numeral(baseData.nowaday && baseData.nowaday.tradeUsers).format('0,0')}
-              //  footer={<Field label="转化率" value="60%" />}
+               total={numeral(baseData.nowaday.tradeUsers).format('0,0')}
                contentHeight={46}
                className={styles.chartCardC}
              >
-             <Trend flag="down">
-               日环比<span className={styles.trendText}>{baseData.nowaday && (baseData.nowaday.tradeUsers / baseData.contrastive.tradeUsers)}%</span>
+             <Trend flag={baseData.nowaday.tradeUsers - baseData.contrastive.tradeUsers >= 0 ? 'up' : 'down'}>
+               日环比<span className={styles.trendText}>{numeral(Math.abs(baseData.nowaday.tradeUsers - baseData.contrastive.tradeUsers) / baseData.contrastive.tradeUsers).format('0.00')}%</span>
              </Trend>
              </ChartCard>
            </Col>
@@ -291,27 +268,17 @@
                bordered={false}
                title="客单价"
                action={<Tooltip title="交易金额/成交用户"><Icon type="info-circle-o" /></Tooltip>}
-               total={baseData.nowaday && (baseData.nowaday.tradeAmt / baseData.nowaday.tradeUsers)}
+               total={yuan(baseData.nowaday.tradeAmt / baseData.nowaday.tradeUsers)}
                className={styles.chartCardD}
-              //  footer={
-              //    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              //      <Trend flag="up" style={{ marginRight: 16 }}>
-              //        周同比<span className={styles.trendText}>12%</span>
-              //      </Trend>
-              //      <Trend flag="down">
-              //        日环比<span className={styles.trendText}>11%</span>
-              //      </Trend>
-              //    </div>
-              //  }
                contentHeight={46}
              >
-             <Trend flag="down">
-               日环比<span className={styles.trendText}>{baseData.nowaday && ((baseData.nowaday.tradeAmt / baseData.nowaday.tradeUsers) / (baseData.contrastive.tradeAmt / baseData.contrastive.tradeUsers))}%</span>
+             <Trend flag={(baseData.nowaday.tradeAmt / baseData.nowaday.tradeUsers) - (baseData.contrastive.tradeAmt / baseData.contrastive.tradeUsers) >=0 ? 'up' : 'down'}>
+               日环比<span className={styles.trendText}>{numeral(Math.abs((baseData.nowaday.tradeAmt / baseData.nowaday.tradeUsers) - (baseData.contrastive.tradeAmt / baseData.contrastive.tradeUsers)) / (baseData.contrastive.tradeAmt / baseData.contrastive.tradeUsers)).format('0.00')}%</span>
              </Trend>
              </ChartCard>
            </Col>
          </Row>
-
+         }
          <Card
            title="支付方式"
            loading={loading}
@@ -325,18 +292,15 @@
                  <Col xl={8} lg={12} md={12} sm={24} xs={24}>
                  <Pie
                    hasLegend
-                   subTitle="支付方式"
-                   total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                   data={salesPieData}
-                   valueFormat={val => yuan(val)}
                    height={248}
                    lineWidth={4}
+                   data={ piePayAmout }
                  />
                  </Col>
                  <Col xl={16} lg={12} md={12} sm={24} xs={24}>
                    <div className={styles.salesBar}>
                    <div style={{ padding: '0 24px' }}>
-                     <Spline/>
+                     { spPayAmout.length > 0 && <Spline data={ spPayAmout }/>}
                    </div>
                    </div>
                  </Col>
@@ -347,18 +311,16 @@
                  <Col xl={8} lg={12} md={12} sm={24} xs={24}>
                  <Pie
                    hasLegend
-                   subTitle="支付方式"
-                   total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                   data={salesPieData}
                    valueFormat={val => yuan(val)}
                    height={248}
                    lineWidth={4}
+                   data = { piePayCount }
                  />
                  </Col>
                  <Col xl={16} lg={12} md={12} sm={24} xs={24}>
                    <div className={styles.salesBar}>
                    <div style={{ padding: '0 24px' }}>
-                     <Spline/>
+                     {spPayCount.length > 0 && <Spline data={ spPayCount }/>}
                    </div>
                    </div>
                  </Col>
@@ -369,18 +331,15 @@
                  <Col xl={8} lg={12} md={12} sm={24} xs={24}>
                  <Pie
                    hasLegend
-                   subTitle="支付方式"
-                   total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                   data={salesPieData}
-                   valueFormat={val => yuan(val)}
                    height={248}
                    lineWidth={4}
+                   data = { pieCustomAmount }
                  />
                  </Col>
                  <Col xl={16} lg={12} md={12} sm={24} xs={24}>
                    <div className={styles.salesBar}>
                    <div style={{ padding: '0 24px' }}>
-                     <Spline/>
+                    {spCustomAmount.length > 0 && <Spline data={ spCustomAmount }/>}
                    </div>
                    </div>
                  </Col>
@@ -391,18 +350,15 @@
                    <Col xl={8} lg={12} md={12} sm={24} xs={24}>
                    <Pie
                      hasLegend
-                     subTitle="支付工具"
-                     total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                     data={salesPieData}
-                     valueFormat={val => yuan(val)}
                      height={248}
                      lineWidth={4}
+                     data={ pieCustomUsers }
                    />
                    </Col>
                    <Col xl={16} lg={12} md={12} sm={24} xs={24}>
                      <div className={styles.salesBar}>
                      <div style={{ padding: '0 24px' }}>
-                      <Spline/>
+                      { spCustomUsers.length > 0 && <Spline data={ spCustomUsers }/> }
                      </div>
                      </div>
                    </Col>
@@ -414,30 +370,20 @@
 
 
          <Card
-           title="支付工具"
+           title="小时指标"
            loading={loading}
            bordered={false}
-           bodyStyle={{ padding: 0,marginTop:'20px' }}
+           bodyStyle={{ padding: 0 }}
+           style={{ padding: 0,marginTop:'20px' }}
          >
            <div className={styles.salesCard}>
              <Tabs size="large" tabBarStyle={{ marginBottom: 24 }}>
                <TabPane tab="支付金额" key="amount">
                <Row>
-                 <Col xl={8} lg={12} md={12} sm={24} xs={24}>
-                 <Pie
-                   hasLegend
-                   subTitle="支付方式"
-                   total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                   data={salesPieData}
-                   valueFormat={val => yuan(val)}
-                   height={248}
-                   lineWidth={4}
-                 />
-                 </Col>
-                 <Col xl={16} lg={12} md={12} sm={24} xs={24}>
+                 <Col xl={24} lg={12} md={12} sm={24} xs={24}>
                    <div className={styles.salesBar}>
                    <div style={{ padding: '0 24px' }}>
-                     <Spline/>
+                     {hourPayAmout.length > 0 && <Spline data={ hourPayAmout }/>}
                    </div>
                    </div>
                  </Col>
@@ -445,21 +391,10 @@
                </TabPane>
                <TabPane tab="支付笔数" key="count">
                <Row>
-                 <Col xl={8} lg={12} md={12} sm={24} xs={24}>
-                 <Pie
-                   hasLegend
-                   subTitle="支付方式"
-                   total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                   data={salesPieData}
-                   valueFormat={val => yuan(val)}
-                   height={248}
-                   lineWidth={4}
-                 />
-                 </Col>
-                 <Col xl={16} lg={12} md={12} sm={24} xs={24}>
+                 <Col xl={24} lg={12} md={12} sm={24} xs={24}>
                    <div className={styles.salesBar}>
                    <div style={{ padding: '0 24px' }}>
-                     <Spline/>
+                     { hourPayCount.length > 0 && <Spline data={ hourPayCount }/>}
                    </div>
                    </div>
                  </Col>
@@ -467,21 +402,10 @@
                </TabPane>
                <TabPane tab="客单价" key="price">
                <Row>
-                 <Col xl={8} lg={12} md={12} sm={24} xs={24}>
-                 <Pie
-                   hasLegend
-                   subTitle="支付方式"
-                   total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                   data={salesPieData}
-                   valueFormat={val => yuan(val)}
-                   height={248}
-                   lineWidth={4}
-                 />
-                 </Col>
-                 <Col xl={16} lg={12} md={12} sm={24} xs={24}>
+                 <Col xl={24} lg={12} md={12} sm={24} xs={24}>
                    <div className={styles.salesBar}>
                    <div style={{ padding: '0 24px' }}>
-                     <Spline/>
+                     { hourCustomAmount.length > 0 && <Spline data={ hourCustomAmount }/> }
                    </div>
                    </div>
                  </Col>
@@ -489,21 +413,10 @@
                </TabPane>
                <TabPane tab="成交用户数" key="users">
                  <Row>
-                   <Col xl={8} lg={12} md={12} sm={24} xs={24}>
-                   <Pie
-                     hasLegend
-                     subTitle="支付工具"
-                     total={yuan(salesPieData.reduce((pre, now) => now.y + pre, 0))}
-                     data={salesPieData}
-                     valueFormat={val => yuan(val)}
-                     height={248}
-                     lineWidth={4}
-                   />
-                   </Col>
-                   <Col xl={16} lg={12} md={12} sm={24} xs={24}>
+                   <Col xl={24} lg={12} md={12} sm={24} xs={24}>
                      <div className={styles.salesBar}>
                      <div style={{ padding: '0 24px' }}>
-                      <Spline/>
+                      { hourCustomUsers.length > 0 && <Spline data={ hourCustomUsers }/> }
                      </div>
                      </div>
                    </Col>

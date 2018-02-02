@@ -1,3 +1,13 @@
+/**
+ * @Author: Chen Ming <amour>
+ * @Date:   2017-11-19T22:37:16+08:00
+ * @Email:  amourfrei@163.com
+ * @Last modified by:   amour
+ * @Last modified time: 2018-02-01T11:15:31+08:00
+ */
+
+
+
 import moment from 'moment';
 
 export function fixedZero(val) {
@@ -91,4 +101,18 @@ export function digitUppercase(n) {
   }
 
   return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^整$/, '零元整');
+}
+
+export function getPayType(t){
+  const types = {
+    0: '快捷',
+    1: '白条',
+    2: '金额',
+    3: '优惠券',
+    4: '微信',
+    5: '小金库',
+    6: '网关'
+  }
+  if(types[t]) return types[t];
+  return '未知';
 }

@@ -3,7 +3,7 @@
  * @Date:   2018-01-24T10:29:52+08:00
  * @Email:  amourfrei@163.com
  * @Last modified by:   amour
- * @Last modified time: 2018-01-25T17:46:17+08:00
+ * @Last modified time: 2018-02-01T16:34:03+08:00
  */
 
 
@@ -137,13 +137,8 @@ export default class Pie extends Component {
     });
 
     const defaultColors = colors;
-    let data = [
-          { item: '事例一', count: 40 },
-          { item: '事例二', count: 21 },
-          { item: '事例三', count: 17 },
-          { item: '事例四', count: 13 },
-          { item: '事例五', count: 9 }
-        ];
+    console.log(this.props.data);
+    let data = this.props.data || [];
     let selected = this.props.selected || true;
     let tooltip = this.props.tooltip || true;
     let formatColor;
@@ -202,6 +197,7 @@ export default class Pie extends Component {
     const cols = {
       percent: {
       formatter: val => {
+        val = val.toFixed(4);
         val = (val * 100) + '%';
           return val;
         }
